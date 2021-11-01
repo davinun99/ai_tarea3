@@ -16,6 +16,7 @@ class AntColony(object):
         self.betha = betha
         self.clients = clients
         self.capacity = capacity
+        self.pareto = []
 
     def get_p_table(self, position_index, visited, cargo, time):
         prob = np.copy( self.pheromone[position_index] )
@@ -55,7 +56,7 @@ class AntColony(object):
         cargo = 0
         time = 0
         # Generate the ant's path...
-        while len(visited) < 100: # Iterate all the clients
+        while len(visited) < len(self.clients) - 1: # Iterate all the clients
             prob_row = self.get_p_table(prev, visited, cargo, time)
             if prob_row.sum() == 0.0: #Si todos los elementos son 0
                 path.append( (prev, 0) ) #Agrego la vuelta del antiguo camion
@@ -73,11 +74,16 @@ class AntColony(object):
   
     def get_path_costs(self, path):
         cost = 0.0
+        time = 0.0
         vehicles = 0
         for route in path:
             cost += self.distances[route]
             if route[0] == 0: #If we start over it means is a new vehicle
                 vehicles += 1
+                time = 0.0
+            time += self.distances[route]
+            destiny = self.clients[ route[1] ]
+            time = destiny.get_time_after_service(time)
         return cost, vehicles
 
     def gen_all_paths(self):
@@ -87,3 +93,40 @@ class AntColony(object):
             cost, vehicles = self.get_path_costs(path)
             all_paths.append( ( path, cost, vehicles ) )
         return all_paths
+    
+    def spread_pheromone(self, all_paths, n_best):
+        ##Primero evaporar:
+        for i in range(len(self.pheromone) - 1):
+            for j in range(len(self.pheromone[0]) - 1):
+                # Tao_i,j = (1-p) Tao_i,j + p * T_0
+                #T_0 = self.distances[i][j]/ len(self.distances)
+                self.pheromone[i][j] = (1 - self.decay) * self.pheromone[i][j] + self.decay * (self.distances[i][j]/ len(self.distances))
+        ##Luego de evaporar, actualizar
+        sorted_paths = sorted(all_paths, key=lambda x: x[1])
+        for path, dist, vehicles in sorted_paths[:n_best]:
+            delta_tao = 1.0 / (dist * vehicles)
+            for move in path:
+                new_tao_ij = self.pheromone[move] + delta_tao
+                t_min = delta_tao / ( 1 - self.decay )
+                t_max = delta_tao / ( 2 * self.n_ants * (1 - self.decay) )
+                if new_tao_ij >= t_max:
+                    self.pheromone[move] = t_max
+                elif new_tao_ij <= t_min:
+                    self.pheromone[move] = t_min
+                else:
+                    self.pheromone[move] = new_tao_ij
+
+    def run(self):
+        distance_logs = []
+        shortest_path = None
+        all_time_shortest_path = ("placeholder", np.inf)
+        for i in range(self.n_iterations):
+            all_paths = self.gen_all_paths()
+            #Actualizar el conjunto pareto
+            self.spread_pheromone(all_paths, self.n_best)
+            shortest_path = min(all_paths, key=lambda x: x[1])
+            print('Generation ', i, ' Best cost', shortest_path[1], 'Vehicles ', shortest_path[2])
+            if shortest_path[1] < all_time_shortest_path[1]:
+                all_time_shortest_path = shortest_path
+            distance_logs.append(all_time_shortest_path[1])                      
+        return all_time_shortest_path,distance_logs

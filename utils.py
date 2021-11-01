@@ -1,6 +1,6 @@
 from classes.ClientData import ClientData
 import numpy as np
-def read_file(file_location_path):
+def read_file(file_location_path, max_clients):
     clients_data = []
     CAPACITY = 0
     with open(file_location_path) as data:
@@ -9,7 +9,7 @@ def read_file(file_location_path):
             #     N_CLIENTS = int(line) - 1
             #     NUMBER_OF_GENES = int(line) - 1
             if i == 3: CAPACITY = int(line)
-            if i > 4:
+            if i > 4 and i <= max_clients + 4:
                 cols = line.split()
                 clients_data.append(ClientData(
                     client_number = int(cols[0]), 
