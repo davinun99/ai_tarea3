@@ -21,7 +21,7 @@ class ClientData(object):
     def timepoint_is_in_the_window(self, timepoint):
         start = timepoint
         end = timepoint + self.service_time
-        return start >= self.ready_time and self.due_date <= end
+        return start >= self.ready_time and end <= self.due_date
     
     def timepoint_is_before(self, timepoint):
         return timepoint < self.ready_time

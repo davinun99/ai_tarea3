@@ -5,9 +5,6 @@ def read_file(file_location_path, max_clients):
     CAPACITY = 0
     with open(file_location_path) as data:
         for i, line in enumerate(data):
-            # if i == 1: 
-            #     N_CLIENTS = int(line) - 1
-            #     NUMBER_OF_GENES = int(line) - 1
             if i == 3: CAPACITY = int(line)
             if i > 4 and i <= max_clients + 4:
                 cols = line.split()
