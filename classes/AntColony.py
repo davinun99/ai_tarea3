@@ -94,11 +94,11 @@ class AntColony(object):
         return cost, vehicles
 
     def does_solution_dominates(self, solution_a, solution_b):
-        return ( solution_a[1] <= solution_b[1] and solution_a[2] <= solution_b[1] ) and (
-            solution_a[1] < solution_b[1] or solution_a[2] < solution_b[1]
+        return ( solution_a[1] <= solution_b[1] and solution_a[2] <= solution_b[2] ) and (
+            solution_a[1] < solution_b[1] or solution_a[2] < solution_b[2]
         )
 
-    def update_pareto(self, pareto_set, path, cost, vehicles):
+    def update_local_pareto(self, pareto_set, path, cost, vehicles):
         new_solution = (path, cost, vehicles)
         new_pareto = []
         if len(pareto_set) == 0:
@@ -121,9 +121,8 @@ class AntColony(object):
         for i in range(self.n_ants):
             path = self.gen_path(0)
             cost, vehicles = self.get_path_costs(path)
-            local_pareto = self.update_pareto( local_pareto, path, cost, vehicles )
-            # has_to_update_pheromones = self.update_pareto( path, cost, vehicles )
-            # self.spread_pheromone( not has_to_update_pheromones )
+            local_pareto = self.update_local_pareto( local_pareto, path, cost, vehicles )
+            self.pareto = self.update_local_pareto(self.pareto, path, cost, vehicles)
             all_paths.append( ( path, cost, vehicles ) )
         return all_paths, local_pareto
     
@@ -151,15 +150,18 @@ class AntColony(object):
             max_vehicles = max( all_paths, key=lambda x: x[2] )[2]
             max_distance = max( all_paths, key=lambda x: x[1] )[1]
             self.spread_pheromone(local_pareto, max_distance, max_vehicles)
-            print ("{:<8} {:<20} {:<10} {:<20} {:<10}".format(i, shortest_path[1], shortest_path[2], all_time_shortest_path[1], len(self.pareto)))
             if shortest_path[1] < all_time_shortest_path[1]:
                 all_time_shortest_path = shortest_path
+            print ("{:<8} {:<20} {:<10} {:<20} {:<10}".format(i, shortest_path[1], shortest_path[2], all_time_shortest_path[1], len(self.pareto)))
             distance_logs.append(all_time_shortest_path[1]) 
             if old_pareto == self.pareto:
                 k_index += 1
             else:
                 k_index = 0
                 old_pareto = copy.deepcopy(self.pareto)
-            if k_index == 10:
+            if k_index == self.k_prima:
+                print('Restarting pheromones...')
                 self.restart_pheromones();
+                k_index = 0
+        self.last_all_paths = all_paths
         return all_time_shortest_path,distance_logs
