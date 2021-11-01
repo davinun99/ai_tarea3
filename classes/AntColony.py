@@ -24,7 +24,7 @@ class AntColony(object):
         for i in range( len(prob) ):
             next_client = self.clients[ i ]
             if prob[i] != 0:
-                next_time = current_client.get_distance_to_client(next_client)
+                next_time = time + current_client.get_distance_to_client(next_client)
                 if cargo + next_client.demand > self.capacity:
                     #Si la sgte demanda + carga_actual > capacidad, no puedo cumplir el destino
                     prob[i] = 0
@@ -55,14 +55,11 @@ class AntColony(object):
         cargo = 0
         time = 0
         # Generate the ant's path...
-        for i in range( len(self.distances) - 1 ): # Iterate all the clients
+        while len(visited) < 100: # Iterate all the clients
             prob_row = self.get_p_table(prev, visited, cargo, time)
-            if list(prob_row) == [0.0] * len(prob_row): #Si todos los elementos son 0
-                cargo = 0; time = 0; prev = 0; #Empezar con un nuevo camion
-                # VERIFICAR SI ESTA BIEN AÑADIR ESTO AL PATH:
-                path.append( (prev, 0) ) # VERIFICAR SI ESTA BIEN AÑADIR ESTO AL PATH:
-                path.append( (0, prev) ) # VERIFICAR SI ESTA BIEN AÑADIR ESTO AL PATH:
-                # VERIFICAR SI ESTA BIEN AÑADIR ESTO AL PATH:
+            if prob_row.sum() == 0.0: #Si todos los elementos son 0
+                path.append( (prev, 0) ) #Agrego la vuelta del antiguo camion
+                cargo = 0; time = 0; prev = 0;#Empezar con un nuevo camion
                 prob_row = self.get_p_table(prev, visited, cargo, time)
             move = np_choice(self.all_inds, 1, p=prob_row )[0] #Elegir uno de acuerdo a la fila p con probabilidades
             path.append( (prev, move) ) #Agregar al camino
@@ -74,3 +71,19 @@ class AntColony(object):
         path.append((prev, start))
         return path
   
+    def get_path_costs(self, path):
+        cost = 0.0
+        vehicles = 0
+        for route in path:
+            cost += self.distances[route]
+            if route[0] == 0: #If we start over it means is a new vehicle
+                vehicles += 1
+        return cost, vehicles
+
+    def gen_all_paths(self):
+        all_paths = []
+        for i in range(self.n_ants):
+            path = self.gen_path(0)
+            cost, vehicles = self.get_path_costs(path)
+            all_paths.append( ( path, cost, vehicles ) )
+        return all_paths
