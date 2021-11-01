@@ -28,3 +28,9 @@ class ClientData(object):
 
     def can_serve_in_timepoint(self, timepoint):
         return self.timepoint_is_in_the_window(timepoint) or self.timepoint_is_before(timepoint)
+    
+    def get_time_after_service(self, timepoint):
+        if( self.timepoint_is_in_the_window(timepoint) ):
+            return timepoint + self.service_time
+        else:
+            return self.ready_time + self.service_time
