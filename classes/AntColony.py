@@ -4,7 +4,7 @@ from numpy.random.mtrand import pareto
 import copy
 
 class AntColony(object):
-    def __init__(self, distances, n_ants, n_iterations, decay, clients, capacity, alpha=1, betha=1, k_prima=10):
+    def __init__(self, distances, n_ants, n_iterations, decay, clients, capacity, alpha=1, betha=1, k_prima=10, cost_is_distance=True):
         self.distances = distances
         self.pheromone = np.ones(self.distances.shape)/ len(distances)
         # vis_i,j = 1/ d_i,j
@@ -19,7 +19,8 @@ class AntColony(object):
         self.capacity = capacity
         self.pareto = []
         self.k_prima = k_prima
-    
+        self.cost_is_distance = cost_is_distance
+
     def restart_pheromones(self):
         self.pheromone = np.ones(self.distances.shape)/ len(self.distances)
 
@@ -81,16 +82,17 @@ class AntColony(object):
         for route in path:
             if route[0] == 0: #If we start over it means is a new vehicle
                 vehicles += 1
-                cost += time
+                if not self.cost_is_distance: #If we're saying that cost is = time we add here
+                    cost += time
                 time = 0.0
             time += self.distances[route]
+            if self.cost_is_distance: #If cost IS = DISTANCE we just add here
+                cost += self.distances[route]
             destiny = self.clients[ route[1] ]
             time = destiny.get_time_after_service(time)
-            if time == 0: 
-                print('im 0')
-        cost += time
-        if cost == 0:
-            print('im 0')
+        if not self.cost_is_distance: #If we're saying that cost is = time we add here
+            cost += time
+            
         return cost, vehicles
 
     def does_solution_dominates(self, solution_a, solution_b):
