@@ -1,5 +1,7 @@
 from classes.ClientData import ClientData
 import numpy as np
+import math
+
 def read_file(file_location_path, max_clients):
     clients_data = []
     CAPACITY = 0
@@ -30,3 +32,46 @@ def get_adjacency_matrix(all_data):
             row.append( client_a.get_distance_to_client(client_b) )
         adjacency_matrix.append(row)
     return adjacency_matrix
+
+def get_m1( pareto_set, y_true):
+    m1 = 1/len(pareto_set)
+    m1_sum = 0
+    for path, cost, vehicles in pareto_set:
+        p_set_item = [cost, vehicles]
+        min_dist = math.inf
+        for x, y in y_true:
+            y_true_item = [x, y]
+            dist = math.dist( p_set_item, y_true_item ) 
+            if dist < min_dist:
+                min_dist = dist
+        m1_sum += min_dist
+    return (m1 * m1_sum)
+
+def get_m2(pareto_set, rho):
+    m2 = 1 / ( len(pareto_set) - 1 )
+    if m2 == 0: 
+        return 0
+    m2_sum = 0
+    for _, cost, vehicles in pareto_set:
+        p1 = [cost, vehicles]
+        for _, cost_2, vehicles_2 in pareto_set:
+            p2 = [cost_2, vehicles_2]
+            if (not (cost_2 == cost and vehicles == vehicles_2)) and math.dist(p1, p2) > rho:
+                m2_sum += 1
+    return m2_sum / m2
+
+def get_m3(pareto_set):
+    if len(pareto_set) == 1:
+        return 0
+    max_dist = 0
+    for _, cost, vehicles in pareto_set:
+        p1 = [cost, vehicles]
+        for _, cost_2, vehicles_2 in pareto_set:
+            p2 = [cost_2, vehicles_2]
+            dist = math.dist(p1, p2)
+            if dist > max_dist:
+                max_dist = dist
+    return max_dist
+
+
+def get_m3(pareto_set)
