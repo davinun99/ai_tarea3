@@ -1,3 +1,8 @@
+Authors:
+
+- David Núñez
+- Matias Lopez
+
 To run the project:
 ....
 

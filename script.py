@@ -330,6 +330,9 @@ def cantidad_repetidos(poblacion):
                 cant_reps +=1
     print(cant_reps)
 
+def get_metrics(): 
+    pass
+
 def nsga(poblacion):
 # función que realiza el ciclo o la generación de la población según el método MOEA NSGA
     generacion = 1

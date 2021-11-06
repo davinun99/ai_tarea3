@@ -21,6 +21,15 @@ def read_file(file_location_path, max_clients = 101):
                 ))
     return clients_data, CAPACITY;
 
+def read_y_true_file(file_location_path):
+    y_true = []
+    with open(file_location_path) as data:
+        for _, line in enumerate(data):
+            cols = line.split()
+            item = ( float( cols[0] ), float( cols[1] ) )
+            y_true.append( item )
+    return y_true
+
 def get_adjacency_matrix(all_data):
     adjacency_matrix = []
     for client_a in all_data:
@@ -36,7 +45,7 @@ def get_adjacency_matrix(all_data):
 def get_m1( pareto_set, y_true):
     m1 = 1/len(pareto_set)
     m1_sum = 0
-    for path, cost, vehicles in pareto_set:
+    for _, cost, vehicles in pareto_set:
         p_set_item = [cost, vehicles]
         min_dist = math.inf
         for x, y in y_true:
@@ -48,9 +57,9 @@ def get_m1( pareto_set, y_true):
     return (m1 * m1_sum)
 
 def get_m2(pareto_set, rho):
-    m2 = 1 / ( len(pareto_set) - 1 )
-    if m2 == 0: 
+    if len(pareto_set) == 1:
         return 0
+    m2 = 1 / ( len(pareto_set) - 1 )
     m2_sum = 0
     for _, cost, vehicles in pareto_set:
         p1 = [cost, vehicles]
@@ -58,7 +67,7 @@ def get_m2(pareto_set, rho):
             p2 = [cost_2, vehicles_2]
             if (not (cost_2 == cost and vehicles == vehicles_2)) and math.dist(p1, p2) > rho:
                 m2_sum += 1
-    return m2_sum / m2
+    return m2_sum * m2
 
 def get_m3(pareto_set):
     if len(pareto_set) == 1:
@@ -73,6 +82,10 @@ def get_m3(pareto_set):
                 max_dist = dist
     return max_dist
 
-
-def get_m3(pareto_set):
-    pass
+def get_error(pareto_set, y_true):
+    cant_in_y_true = 0
+    for _, cost, vehicles in pareto_set:
+        for x, y in y_true:
+            if x == cost and y == vehicles:
+                cant_in_y_true += 1
+    return 1 - ( cant_in_y_true / len(pareto_set) )
