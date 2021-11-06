@@ -74,4 +74,5 @@ def get_m3(pareto_set):
     return max_dist
 
 
-def get_m3(pareto_set)
+def get_m3(pareto_set):
+    pass
