@@ -16,7 +16,7 @@ CAPACITY = 0
 N_CLIENTS = 0
 NUMBER_OF_GENES =0
 NUMERO_DE_INDIVIDUOS = 100
-MAX_GENERATION_NUMBER = 400
+MAX_GENERATION_NUMBER = 100
 PROPORCION_ELITISTA = 0.2
 PROPORCION_CROSSOVER = 0.8
 PROPORCION_MUTACION = 0.02 # porcentaje de individuos de cada genración expuestos a la mutación
@@ -417,6 +417,7 @@ def main():
     # gráfica del pareto set
     pareto_plot = [ (c,v) for _,c,v in pareto_front ]
     plt.scatter( *zip(*pareto_plot) )
+    plt.title('Frente Pareto Final')
     plt.show()
 
     # gráfica de mejores individuos a través de las generaciones
@@ -424,6 +425,10 @@ def main():
     y_val = [x[1] for x in mejores_individuos]
     plt.plot(x_val,y_val)
     plt.plot(x_val,y_val, 'or')
+    plt.gca().invert_xaxis()
+    plt.title('Evolución del mejor individuo')
+    plt.xlabel('Costo de Ruta')
+    plt.ylabel('Cantidad de Individuos')
     plt.show()
 
 main()
