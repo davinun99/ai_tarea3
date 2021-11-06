@@ -3,6 +3,7 @@ import copy
 from os import pardir
 import random
 import math
+import matplotlib.pyplot as plt
 
 from clases.ClientData import ClientData
 from clases.Individual import Individual
@@ -14,8 +15,8 @@ from utils import get_error, get_m1, get_m2, get_m3, read_y_true_file
 CAPACITY = 0
 N_CLIENTS = 0
 NUMBER_OF_GENES =0
-NUMERO_DE_INDIVIDUOS = 300
-MAX_GENERATION_NUMBER = 250
+NUMERO_DE_INDIVIDUOS = 100
+MAX_GENERATION_NUMBER = 400
 PROPORCION_ELITISTA = 0.2
 PROPORCION_CROSSOVER = 0.8
 PROPORCION_MUTACION = 0.02 # porcentaje de individuos de cada genración expuestos a la mutación
@@ -337,6 +338,9 @@ def get_metrics():
 def nsga(poblacion):
 # función que realiza el ciclo o la generación de la población según el método MOEA NSGA
     generacion = 1
+    # lista para graficar el comportamiento de los mejores valores del nsga
+    mejores_individuos = []
+    mejor_global = poblacion[0]
     # mientras no se cumpla la condición de parada. Cada ciclo del while es una generación
     while(not condicion_parada(generacion)):
         # realizamos el ranking de frentes para clasificar a la población y darles un fitness
@@ -345,12 +349,16 @@ def nsga(poblacion):
         ordenar_poblacion_por_fitness(poblacion)
         # Mostramos al mejor individuo de la generación actual
         print('generacion {}: Mejor individuo = cant vehiculos: {}, costo de ruta: {}'.format(generacion,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+        # actualizamos el mejor global
+        if poblacion[0].tiempo_total_vehiculos < mejor_global.tiempo_total_vehiculos and poblacion[0].cantidad_vehiculos < mejor_global.cantidad_vehiculos:
+            mejor_global = copy.deepcopy(poblacion[0])
+        mejores_individuos.append([mejor_global.tiempo_total_vehiculos,mejor_global.cantidad_vehiculos])
         # procedemos a la selección y reproducción:
         nueva_generacion = []
         # primero elegimos a los mejores de la generación actual y los hacemos pasar a la nueva generación
-        nueva_generacion += seleccion_elitista(poblacion)
+        nueva_generacion += copy.deepcopy(seleccion_elitista(poblacion))
         # luego realizamos crossover para generar los individuos de la nueva generación
-        nueva_generacion += reproduccion_crossover_cxOrdered(poblacion)
+        nueva_generacion += copy.deepcopy(reproduccion_crossover_cxOrdered(poblacion))
          # luego mutamos con cierta probabilidad un porcentaje de la nueva población
         mutacion(nueva_generacion)
         # APORTE PERSONAL: si encontramos en una misma población elementos repetidos, entonces los cambiamos por individuos random para favorecer la exploración
@@ -358,12 +366,15 @@ def nsga(poblacion):
         # luego incrementamos el número de generación
         generacion += 1
         # pasamos la nueva generación a la población actual (haciendo un deep copy)
-        poblacion = nueva_generacion
+        poblacion = copy.deepcopy(nueva_generacion)
     # al terminar el while debemos calcular el ranking de frentes de la última nueva generación y ordenar por fitness
     ranking_de_frentes(poblacion)
     ordenar_poblacion_por_fitness(poblacion)
     # finalmente mostramos al mejor individuo final
     print('generacion {} (FINAL): Mejor individuo = cant vehiculos: {}, costo de ruta: {}'.format(generacion-1,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+    if poblacion[0].tiempo_total_vehiculos < mejor_global.tiempo_total_vehiculos and poblacion[0].cantidad_vehiculos < mejor_global.cantidad_vehiculos:
+        mejor_global = copy.deepcopy(poblacion[0])
+    mejores_individuos.append([mejor_global.tiempo_total_vehiculos,mejor_global.cantidad_vehiculos])
     # calculamos el frente Pareto óptimo
     poblacion_copy = poblacion
     frente_pareto, poblacion_copy = calcular_frente(poblacion_copy, 1)
@@ -372,7 +383,7 @@ def nsga(poblacion):
     for ind in frente_pareto:
         # print(ind.get_fitness_objetivos())
         formated_pareto_front.append([ind.get_ruta(),ind.tiempo_total_vehiculos,ind.cantidad_vehiculos])
-    return formated_pareto_front
+    return formated_pareto_front, mejores_individuos
 
 
 def condicion_parada(generacion):
@@ -392,7 +403,7 @@ def main():
     
     # dibujar_frente_pareto(poblacion)
 
-    pareto_front = nsga(poblacion)
+    pareto_front, mejores_individuos = nsga(poblacion)
     
     # comparación con las métricas
     y_true = read_y_true_file("./txt/y_true_rc101.txt")
@@ -402,6 +413,18 @@ def main():
     print("m2: {}".format( get_m2(pareto_front, 20) ))
     print("m3: {}".format( get_m3(pareto_front) ))
     print("Error: {}".format( get_error(pareto_front, y_true) ))
+    
+    # gráfica del pareto set
+    pareto_plot = [ (c,v) for _,c,v in pareto_front ]
+    plt.scatter( *zip(*pareto_plot) )
+    plt.show()
+
+    # gráfica de mejores individuos a través de las generaciones
+    x_val = [x[0] for x in mejores_individuos]
+    y_val = [x[1] for x in mejores_individuos]
+    plt.plot(x_val,y_val)
+    plt.plot(x_val,y_val, 'or')
+    plt.show()
 
 main()
 
