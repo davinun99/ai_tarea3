@@ -343,7 +343,7 @@ def nsga(poblacion):
         # ordenamos a la población de acuerdo a su fitness
         ordenar_poblacion_por_fitness(poblacion)
         # Mostramos al mejor individuo de la generación actual
-        print('generacion {}: Mejor individuo = Fitness: {}, cant vehiculos: {}, tiempo total: {}'.format(generacion,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+        print('generacion {}: Mejor individuo = cant vehiculos: {}, costo de ruta: {}'.format(generacion,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
         # procedemos a la selección y reproducción:
         nueva_generacion = []
         # primero elegimos a los mejores de la generación actual y los hacemos pasar a la nueva generación
@@ -362,7 +362,16 @@ def nsga(poblacion):
     ranking_de_frentes(poblacion)
     ordenar_poblacion_por_fitness(poblacion)
     # finalmente mostramos al mejor individuo final
-    print('generacion {} (FINAL): Mejor individuo = Fitness: {}, cant vehiculos: {}, tiempo total: {}'.format(generacion-1,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+    print('generacion {} (FINAL): Mejor individuo = cant vehiculos: {}, costo de ruta: {}'.format(generacion-1,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+    # calculamos el frente Pareto óptimo
+    poblacion_copy = poblacion
+    frente_pareto, poblacion_copy = calcular_frente(poblacion_copy, 1)
+    # damos formato para retornar
+    formated_pareto_front = []
+    for ind in frente_pareto:
+        # print(ind.get_fitness_objetivos())
+        formated_pareto_front.append([ind.get_ruta(),ind.tiempo_total_vehiculos,ind.cantidad_vehiculos])
+    return formated_pareto_front
 
 
 def condicion_parada(generacion):
