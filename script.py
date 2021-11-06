@@ -6,6 +6,7 @@ import math
 
 from clases.ClientData import ClientData
 from clases.Individual import Individual
+from utils import get_error, get_m1, get_m2, get_m3, read_y_true_file
 
 # IMPLEMENTAR CONTROL DE REPETIDOS, VER POR QUÉ LA DEGRADACIÓN DE NICHO AFECTA AL CROSSOVER CUANDO ES 1
 
@@ -391,7 +392,16 @@ def main():
     
     # dibujar_frente_pareto(poblacion)
 
-    nsga(poblacion)
+    pareto_front = nsga(poblacion)
+    
+    # comparación con las métricas
+    y_true = read_y_true_file("./txt/y_true_rc101.txt")
+    print ("Pareto set: {}".format([(cost, v) for _,cost,v in pareto_front]))
+    print("Y true: {}".format(y_true))
+    print("m1: {}".format( get_m1(pareto_front, y_true) ))
+    print("m2: {}".format( get_m2(pareto_front, 20) ))
+    print("m3: {}".format( get_m3(pareto_front) ))
+    print("Error: {}".format( get_error(pareto_front, y_true) ))
 
 main()
 
