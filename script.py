@@ -20,6 +20,7 @@ PROPORCION_CROSSOVER = 0.85
 PROPORCION_MUTACION = 0.02 # porcentaje de individuos de cada genración expuestos a la mutación
 MUTATION_RATE= 0.002 # probabilidad de mutación
 INCLUIR_TIEMPO_ESPERA = False # Cambiar este para controlar si incluir a la distancia total (en tiempo) el tiempo que cada vehículo espera al llegar temprano
+FILE_PATH = "txt/vrptw_c101.txt"
 dict_individual_number = {} # variable global diccionario para mapear individuos a sus indices
 
 def read_file(file_location_path):
@@ -186,7 +187,7 @@ def mutacion(poblacion):
 def reproduccion_crossover_cxOrdered(poblacion):
 # función que realiza la reproducción de individuos mediante crossover. Previamente elige cada par con la ruleta
     # en primer lugar leemos el archivo para poder pasar los parámetros necesarios a los nuevos individuos que se generen
-    data = read_file("vrptw_c101.txt");
+    data = read_file(FILE_PATH);
     clients_data = data[1:]
     depot_data = data[0]
     nueva_generacion = []
@@ -302,7 +303,7 @@ def controlar_repetidos(poblacion):
                 cant_reps[i] +=1
     
     # primeramente conseguimos los valores para crear individuos
-    data = read_file("vrptw_c101.txt");
+    data = read_file(FILE_PATH);
     clients_data = data[1:]
     depot_data = data[0]
     
@@ -371,7 +372,7 @@ def condicion_parada(generacion):
 
 
 def main():
-    data = read_file("vrptw_c101.txt");
+    data = read_file(FILE_PATH);
     clients_data = data[1:]
     depot_data = data[0]
     poblacion = inicializar_poblacion(depot_data, clients_data)

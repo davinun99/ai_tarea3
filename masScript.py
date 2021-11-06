@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from classes.AntColony import AntColony
+from clases.AntColony import AntColony
 from utils import get_adjacency_matrix, read_file
 
 
 def main():
-    data, capacity = read_file("vrptw_c101.txt", 1000)
+    data, capacity = read_file("./txt/vrptw_c101.txt", 1000)
     distances = np.array(get_adjacency_matrix(data))
     ant_colony = AntColony(distances, 10, 100, 0.8, data, capacity, alpha=10, betha=1.5, k_prima=14)
     #ant_colony = AntColony(distances, 50, 100, 0.7, data, capacity, alpha=10, betha=1.5, k_prima=20)

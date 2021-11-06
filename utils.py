@@ -1,8 +1,8 @@
-from classes.ClientData import ClientData
+from clases.ClientData import ClientData
 import numpy as np
 import math
 
-def read_file(file_location_path, max_clients):
+def read_file(file_location_path, max_clients = 101):
     clients_data = []
     CAPACITY = 0
     with open(file_location_path) as data:
