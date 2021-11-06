@@ -4,10 +4,12 @@ from os import pardir
 import random
 import math
 import matplotlib.pyplot as plt
+import numpy as np
+from clases.AntColony import AntColony
 
 from clases.ClientData import ClientData
 from clases.Individual import Individual
-from utils import get_error, get_m1, get_m2, get_m3, read_y_true_file
+from utils import get_adjacency_matrix, get_error, get_m1, get_m2, get_m3, read_y_true_file
 
 # IMPLEMENTAR CONTROL DE REPETIDOS, VER POR QUÉ LA DEGRADACIÓN DE NICHO AFECTA AL CROSSOVER CUANDO ES 1
 
@@ -394,6 +396,33 @@ def condicion_parada(generacion):
         parada = True
     return parada
 
+def inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data):
+# llamamos a un ACO para poder inicializar con mejores valores el NSGA, ya que actualmente son solo valores random
+    distances = np.array(get_adjacency_matrix(data))
+    ant_colony = AntColony(distances, 10, 10, 0.5, data, CAPACITY, alpha=3, betha=1.5, k_prima=10)
+    print('ACO para un obtener porcentaje de la población inicial')
+    ant_colony.run()
+    # print(ant_colony.pareto)
+    # ahora insertamos los elementos del frente pareto del ACO
+    for i in range(len(ant_colony.pareto)):
+        # para cada elemento en el frente conseguimos su ruta (en ACO es una lista de tuplas)
+        ruta_aco = ant_colony.pareto[i][0]
+        # convertimos cada ruta de tuplas a una ruta normal
+        ruta_convertida = []
+        for tupla in ruta_aco:
+            ruta_convertida.append(int(tupla[1]))
+        print(ruta_convertida)
+        print(len(ruta_convertida))
+        print(ant_colony.pareto[i][2])
+        # reemplazamos esa ruta dentro de un individuo
+        indiv=Individual(depot_data,clients_data,CAPACITY)
+        indiv.genes = ruta_convertida
+        indiv.reparacion_heuristica_y_calculo_objetivos(INCLUIR_TIEMPO_ESPERA)
+        print(indiv.get_ruta())
+        print(len(indiv.get_ruta()))
+        print(indiv.cantidad_vehiculos)
+        poblacion[i] = indiv
+
 
 def main():
     data = read_file(FILE_PATH);
@@ -401,8 +430,10 @@ def main():
     depot_data = data[0]
     poblacion = inicializar_poblacion(depot_data, clients_data)
     
-    # dibujar_frente_pareto(poblacion)
-
+    # opcional
+    # inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data)
+    
+    print('NSGA')
     pareto_front, mejores_individuos = nsga(poblacion)
     
     # comparación con las métricas
