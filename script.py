@@ -13,14 +13,14 @@ from clases.Individual import Individual
 CAPACITY = 0
 N_CLIENTS = 0
 NUMBER_OF_GENES =0
-NUMERO_DE_INDIVIDUOS = 100
-MAX_GENERATION_NUMBER = 200
-PROPORCION_ELITISTA = 0.15
-PROPORCION_CROSSOVER = 0.85
+NUMERO_DE_INDIVIDUOS = 300
+MAX_GENERATION_NUMBER = 250
+PROPORCION_ELITISTA = 0.2
+PROPORCION_CROSSOVER = 0.8
 PROPORCION_MUTACION = 0.02 # porcentaje de individuos de cada genración expuestos a la mutación
 MUTATION_RATE= 0.002 # probabilidad de mutación
 INCLUIR_TIEMPO_ESPERA = False # Cambiar este para controlar si incluir a la distancia total (en tiempo) el tiempo que cada vehículo espera al llegar temprano
-FILE_PATH = "txt/vrptw_c101.txt"
+FILE_PATH = "txt/vrptw_rc101.txt"
 dict_individual_number = {} # variable global diccionario para mapear individuos a sus indices
 
 def read_file(file_location_path):
@@ -294,7 +294,7 @@ def son_individuos_iguales(individuo1, individuo2):
 
 def controlar_repetidos(poblacion):
 # función que se encarga de eliminar un elemento si se encuentra repetido más de 2 veces en la población y agregar un random en su lugar
-    cant_reps= [ 0 for x in range(100) ]
+    cant_reps= [ 0 for _ in range(len(poblacion)) ]
     tam_poblacion = len(poblacion)
     # los for van en reversa para poder ir dando valores de n-1 al último repetido hasta 0 al original 
     for i in range(tam_poblacion-1,-1,-1):
