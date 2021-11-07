@@ -3,20 +3,22 @@ import copy
 from os import pardir
 import random
 import math
+import matplotlib.pyplot as plt
+import numpy as np
+from clases.AntColony import AntColony
 
 from clases.ClientData import ClientData
 from clases.Individual import Individual
-
-# IMPLEMENTAR CONTROL DE REPETIDOS, VER POR QUÉ LA DEGRADACIÓN DE NICHO AFECTA AL CROSSOVER CUANDO ES 1
+from utils import get_adjacency_matrix, get_error, get_m1, get_m2, get_m3, read_y_true_file
 
 # los tres primeros datos serán cargados al leer el archivo
 CAPACITY = 0
 N_CLIENTS = 0
 NUMBER_OF_GENES =0
-NUMERO_DE_INDIVIDUOS = 300
-MAX_GENERATION_NUMBER = 250
-PROPORCION_ELITISTA = 0.2
-PROPORCION_CROSSOVER = 0.8
+NUMERO_DE_INDIVIDUOS = 200# 75
+MAX_GENERATION_NUMBER = 100# 600
+PROPORCION_ELITISTA = 0.4
+PROPORCION_CROSSOVER = 0.6
 PROPORCION_MUTACION = 0.02 # porcentaje de individuos de cada genración expuestos a la mutación
 MUTATION_RATE= 0.002 # probabilidad de mutación
 INCLUIR_TIEMPO_ESPERA = False # Cambiar este para controlar si incluir a la distancia total (en tiempo) el tiempo que cada vehículo espera al llegar temprano
@@ -336,6 +338,9 @@ def get_metrics():
 def nsga(poblacion):
 # función que realiza el ciclo o la generación de la población según el método MOEA NSGA
     generacion = 1
+    # lista para graficar el comportamiento de los mejores valores del nsga
+    mejores_individuos = []
+    mejor_global = poblacion[0]
     # mientras no se cumpla la condición de parada. Cada ciclo del while es una generación
     while(not condicion_parada(generacion)):
         # realizamos el ranking de frentes para clasificar a la población y darles un fitness
@@ -343,13 +348,17 @@ def nsga(poblacion):
         # ordenamos a la población de acuerdo a su fitness
         ordenar_poblacion_por_fitness(poblacion)
         # Mostramos al mejor individuo de la generación actual
-        print('generacion {}: Mejor individuo = Fitness: {}, cant vehiculos: {}, tiempo total: {}'.format(generacion,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+        print('generacion {}: Mejor individuo = cant vehiculos: {}, costo de ruta: {}'.format(generacion,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+        # actualizamos el mejor global
+        if poblacion[0].tiempo_total_vehiculos < mejor_global.tiempo_total_vehiculos and poblacion[0].cantidad_vehiculos < mejor_global.cantidad_vehiculos:
+            mejor_global = copy.deepcopy(poblacion[0])
+        mejores_individuos.append([mejor_global.tiempo_total_vehiculos,mejor_global.cantidad_vehiculos])
         # procedemos a la selección y reproducción:
         nueva_generacion = []
         # primero elegimos a los mejores de la generación actual y los hacemos pasar a la nueva generación
-        nueva_generacion += seleccion_elitista(poblacion)
+        nueva_generacion += copy.deepcopy(seleccion_elitista(poblacion))
         # luego realizamos crossover para generar los individuos de la nueva generación
-        nueva_generacion += reproduccion_crossover_cxOrdered(poblacion)
+        nueva_generacion += copy.deepcopy(reproduccion_crossover_cxOrdered(poblacion))
          # luego mutamos con cierta probabilidad un porcentaje de la nueva población
         mutacion(nueva_generacion)
         # APORTE PERSONAL: si encontramos en una misma población elementos repetidos, entonces los cambiamos por individuos random para favorecer la exploración
@@ -357,12 +366,24 @@ def nsga(poblacion):
         # luego incrementamos el número de generación
         generacion += 1
         # pasamos la nueva generación a la población actual (haciendo un deep copy)
-        poblacion = nueva_generacion
+        poblacion = copy.deepcopy(nueva_generacion)
     # al terminar el while debemos calcular el ranking de frentes de la última nueva generación y ordenar por fitness
     ranking_de_frentes(poblacion)
     ordenar_poblacion_por_fitness(poblacion)
     # finalmente mostramos al mejor individuo final
-    print('generacion {} (FINAL): Mejor individuo = Fitness: {}, cant vehiculos: {}, tiempo total: {}'.format(generacion-1,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+    print('generacion {} (FINAL): Mejor individuo = cant vehiculos: {}, costo de ruta: {}'.format(generacion-1,poblacion[0].fitness,poblacion[0].cantidad_vehiculos,poblacion[0].tiempo_total_vehiculos))
+    if poblacion[0].tiempo_total_vehiculos < mejor_global.tiempo_total_vehiculos and poblacion[0].cantidad_vehiculos < mejor_global.cantidad_vehiculos:
+        mejor_global = copy.deepcopy(poblacion[0])
+    mejores_individuos.append([mejor_global.tiempo_total_vehiculos,mejor_global.cantidad_vehiculos])
+    # calculamos el frente Pareto óptimo
+    poblacion_copy = poblacion
+    frente_pareto, poblacion_copy = calcular_frente(poblacion_copy, 1)
+    # damos formato para retornar
+    formated_pareto_front = []
+    for ind in frente_pareto:
+        # print(ind.get_fitness_objetivos())
+        formated_pareto_front.append([ind.get_ruta(),ind.tiempo_total_vehiculos,ind.cantidad_vehiculos])
+    return formated_pareto_front, mejores_individuos
 
 
 def condicion_parada(generacion):
@@ -373,16 +394,75 @@ def condicion_parada(generacion):
         parada = True
     return parada
 
+def inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data):
+# llamamos a un ACO para poder inicializar con mejores valores el NSGA, ya que actualmente son solo valores random
+    distances = np.array(get_adjacency_matrix(data))
+    ant_colony = AntColony(distances, 10, 10, 0.5, data, CAPACITY, alpha=3, betha=1.5, k_prima=10)
+    print('ACO para un obtener porcentaje de la población inicial')
+    ant_colony.run()
+    # print(ant_colony.pareto)
+    # ahora insertamos los elementos del frente pareto del ACO
+    for i in range(len(ant_colony.pareto)):
+        # para cada elemento en el frente conseguimos su ruta (en ACO es una lista de tuplas)
+        ruta_aco = ant_colony.pareto[i][0]
+        # convertimos cada ruta de tuplas a una ruta normal
+        ruta_convertida = []
+        for tupla in ruta_aco:
+            ruta_convertida.append(int(tupla[1]))
+        # solución provisional, al array de elementos del aco le suele faltar un elemento, buscar ese elemento que falta y añadir
+        for j in range(100):
+            client_number = j+1
+            is_in = False
+            for gen in ruta_convertida:
+                if client_number == gen:
+                    is_in = True
+            if is_in == False:
+                ruta_convertida.append(client_number)
+        # reemplazamos esa ruta dentro de un individuo
+        indiv=Individual(depot_data,clients_data,CAPACITY)
+        indiv.genes = ruta_convertida
+        indiv.reparacion_heuristica_y_calculo_objetivos(INCLUIR_TIEMPO_ESPERA)
+        poblacion[i] = copy.deepcopy(indiv)
+        print(indiv.get_fitness_objetivos())
+
 
 def main():
     data = read_file(FILE_PATH);
     clients_data = data[1:]
     depot_data = data[0]
     poblacion = inicializar_poblacion(depot_data, clients_data)
-    
-    # dibujar_frente_pareto(poblacion)
 
-    nsga(poblacion)
+    # opcional
+    inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data)
+    
+    print('NSGA')
+    pareto_front, mejores_individuos = nsga(poblacion)
+    
+    # comparación con las métricas
+    y_true = read_y_true_file("./txt/y_true_rc101.txt")
+    print ("Pareto set: {}".format([(cost, v) for _,cost,v in pareto_front]))
+    print("Y true: {}".format(y_true))
+    print("m1: {}".format( get_m1(pareto_front, y_true) ))
+    print("m2: {}".format( get_m2(pareto_front, 20) ))
+    print("m3: {}".format( get_m3(pareto_front) ))
+    print("Error: {}".format( get_error(pareto_front, y_true) ))
+    
+    # gráfica del pareto set
+    pareto_plot = [ (c,v) for _,c,v in pareto_front ]
+    plt.scatter( *zip(*pareto_plot) )
+    plt.title('Frente Pareto Final')
+    plt.show()
+
+    # gráfica de mejores individuos a través de las generaciones
+    x_val = [x[0] for x in mejores_individuos]
+    y_val = [x[1] for x in mejores_individuos]
+    plt.plot(x_val,y_val)
+    plt.plot(x_val,y_val, 'or')
+    plt.gca().invert_xaxis()
+    plt.title('Evolución del mejor individuo')
+    plt.xlabel('Costo de Ruta')
+    plt.ylabel('Cantidad de Individuos')
+    plt.show()
 
 main()
 

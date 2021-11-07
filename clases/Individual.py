@@ -95,27 +95,12 @@ class Individual(object):
         self.genes = new_genes_valid_time
 
     def heuristic_repair(self):
-        # este algoritmo realiza la reparación heurísitca:
-        new_genes_valid_capacity = []
-        total_cargo = 0
-        for client_number in self.genes:
-            position = self.clients_data[ client_number - 1]
-            total_cargo += position.demand # Load the cargo with the demand
-            if total_cargo >= self.max_capacity: #If the cargo is greater than the max
-                new_genes_valid_capacity.append(0) #Add new truck here
-                # si el otro camión se llenó entonces le ponemos a este la carga desde el punto
-                # por eso se inicializa de nuevo total_cargo a ese valor
-                total_cargo = position.demand # THe new truck will have a new capacity
-            #If not, just continue the visit of the next client
-            new_genes_valid_capacity.append(client_number)
-        
-        #With the logic above new_genes has valid travels for many trucks that doesnt violate the capacity restriction
-        #Now we have to repair the time windows
-        
+    # este algoritmo realiza la reparación heurística:
+        # first we have to repair the time windows        
         new_genes_valid_time = []
         time = 0
         position = self.depot_data
-        for client_number in new_genes_valid_capacity:
+        for client_number in self.genes:
             if client_number == 0:
                 time = 0# Restart time because this is a new truck
                 position = self.depot_data
@@ -128,19 +113,43 @@ class Individual(object):
                     position = client_to_serve
                     if client_to_serve.timepoint_is_before(time): # si llegamos antes, esperamos....
                         time = client_to_serve.ready_time + client_to_serve.service_time
+                                
                     else:
                         time += client_to_serve.service_time # if we arrive on time we just add the time
-
+                    
                 # si no puede llegar o completar el servicio en la ventana de tiempo
                 else:
                     new_genes_valid_time.append(0) # Add new truck
                     time = client_to_serve.ready_time + client_to_serve.service_time # Restart time because this is a new truck
-                    position = client_to_serve               
+                    
+                    position = client_to_serve
+                            
             new_genes_valid_time.append(client_number)
-             
-        self.genes = new_genes_valid_time
-        # llamamos a la función para calcular los valores de las funciones objetivo a optimizar
+
+        # with the next code new_genes has valid travels for many trucks that doesnt violate the capacity restriction
+        new_genes_valid_capacity = []
+        total_cargo = 0
+        for client_number in new_genes_valid_time:
+            # si el cliente es 0
+            if client_number == 0:
+                # entonces en un deposito
+                new_genes_valid_capacity.append(0)
+                # se realiza descarga de la carga por lo tanto
+                total_cargo = 0
+            else:
+                position = self.clients_data[ client_number - 1]
+                total_cargo += position.demand # Load the cargo with the demand
+                if total_cargo >= self.max_capacity: #If the cargo is greater than the max
+                    new_genes_valid_capacity.append(0) #Add new truck here
+                    # si el otro camión se llenó entonces le ponemos a este la carga desde el punto
+                    # por eso se inicializa de nuevo total_cargo a ese valor
+                    total_cargo = position.demand # THe new truck will have a new capacity
+                #If not, just continue the visit of the next client
+                new_genes_valid_capacity.append(client_number)
+
+        self.genes = new_genes_valid_capacity
     
+
     def calcular_objetivos_a_optimizar(self):
         self.cantidad_vehiculos = 1
         self.tiempo_total_vehiculos = 0
