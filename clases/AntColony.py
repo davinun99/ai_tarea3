@@ -20,6 +20,7 @@ class AntColony(object):
         self.pareto = []
         self.k_prima = k_prima
         self.cost_is_distance = cost_is_distance
+        self.last_population = []
 
     def restart_pheromones(self):
         self.pheromone = np.ones(self.distances.shape)/ len(self.distances)
@@ -59,7 +60,7 @@ class AntColony(object):
         cargo = 0
         time = 0
         # Generate the ant's path...
-        while len(visited) < len(self.clients) - 1: # Iterate all the clients
+        while len(visited) < len(self.clients): # Iterate all the clients
             prob_row = self.get_p_table(prev, visited, cargo, time)
             if prob_row.sum() == 0.0: #Si todos los elementos son 0
                 path.append( (prev, 0) ) #Agrego la vuelta del antiguo camion
@@ -165,5 +166,6 @@ class AntColony(object):
                 print('Restarting pheromones...')
                 self.restart_pheromones();
                 k_index = 0
+            self.last_population = all_paths
         self.last_all_paths = all_paths
         return all_time_shortest_path,distance_logs
