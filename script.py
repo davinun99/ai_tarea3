@@ -15,8 +15,8 @@ from utils import get_adjacency_matrix, get_error, get_m1, get_m2, get_m3, read_
 CAPACITY = 0
 N_CLIENTS = 0
 NUMBER_OF_GENES =0
-NUMERO_DE_INDIVIDUOS = 200# 75
-MAX_GENERATION_NUMBER = 100# 600
+NUMERO_DE_INDIVIDUOS = 75
+MAX_GENERATION_NUMBER = 10000
 PROPORCION_ELITISTA = 0.4
 PROPORCION_CROSSOVER = 0.6
 PROPORCION_MUTACION = 0.02 # porcentaje de individuos de cada genración expuestos a la mutación
@@ -400,29 +400,21 @@ def inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data):
     ant_colony = AntColony(distances, 10, 10, 0.5, data, CAPACITY, alpha=3, betha=1.5, k_prima=10)
     print('ACO para un obtener porcentaje de la población inicial')
     ant_colony.run()
-    # print(ant_colony.pareto)
-    # ahora insertamos los elementos del frente pareto del ACO
-    for i in range(len(ant_colony.pareto)):
-        # para cada elemento en el frente conseguimos su ruta (en ACO es una lista de tuplas)
-        ruta_aco = ant_colony.pareto[i][0]
+    # recorremos todos los individuos de la población
+    i = 0
+    for individuo in ant_colony.last_population:
+        # para cada elemento conseguimos su ruta (en ACO es una lista de tuplas)
+        ruta_aco = individuo[0]
         # convertimos cada ruta de tuplas a una ruta normal
         ruta_convertida = []
         for tupla in ruta_aco:
             ruta_convertida.append(int(tupla[1]))
-        # solución provisional, al array de elementos del aco le suele faltar un elemento, buscar ese elemento que falta y añadir
-        for j in range(100):
-            client_number = j+1
-            is_in = False
-            for gen in ruta_convertida:
-                if client_number == gen:
-                    is_in = True
-            if is_in == False:
-                ruta_convertida.append(client_number)
         # reemplazamos esa ruta dentro de un individuo
         indiv=Individual(depot_data,clients_data,CAPACITY)
         indiv.genes = ruta_convertida
         indiv.reparacion_heuristica_y_calculo_objetivos(INCLUIR_TIEMPO_ESPERA)
         poblacion[i] = copy.deepcopy(indiv)
+        i += 1
         print(indiv.get_fitness_objetivos())
 
 
@@ -433,7 +425,7 @@ def main():
     poblacion = inicializar_poblacion(depot_data, clients_data)
 
     # opcional
-    inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data)
+    # inicializar_poblacion_con_ACO(poblacion,data,depot_data,clients_data)
     
     print('NSGA')
     pareto_front, mejores_individuos = nsga(poblacion)
